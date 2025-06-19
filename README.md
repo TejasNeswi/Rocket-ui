@@ -1,70 +1,80 @@
-# Getting Started with Create React App
+# Rocket Telemetry Visualization UI
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project is an interactive web application for visualizing rocket telemetry data in real time. It features a 3D rocket model that updates its orientation (pitch, yaw, roll) and dynamic charts for altitude and velocity, all based on data from a CSV file.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **3D Rocket Visualization:** View the rocket's orientation in real time using Three.js via React Three Fiber.
+- **Live Graphs:** Real-time line charts for pitch, yaw, roll, altitude, and velocity.
+- **CSV Data Driven:** Reads telemetry data from a CSV file (`public/dummy_rocket_data_with_velocity.csv`).
+- **Modern UI:** Neon-themed, responsive, and visually appealing interface.
 
-### `npm start`
+## Demo
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+![Altitude and Velocity Graphs](public/altitude_and_velcoity.png)
+*Altitude and Velocity Graphs*
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+![Rocket Orientation](public/rocket_orientation.png)
+*Rocket Orientation Visualization*
 
-### `npm test`
+## Getting Started
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Prerequisites
+- Node.js (v16 or newer recommended)
+- npm
 
-### `npm run build`
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/TejasNeswi/Rocket-ui.git
+   cd rocket-ui
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Running the App
+Start the development server:
+```bash
+npm start
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Building for Production
+```bash
+npm run build
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Data Format
+The app expects a CSV file at `public/dummy_rocket_data_with_velocity.csv` with the following columns:
 
-### `npm run eject`
+```
+timestamp,pitch,yaw,roll,altitude,velocity
+0,2.75,19.22,-10.46,24.12,2996.32
+1,23.17,-12.1,-11.66,37.59,7605.71
+...
+```
+- **timestamp:** Time in seconds
+- **pitch, yaw, roll:** Orientation angles in degrees
+- **altitude:** Altitude in millimeters
+- **velocity:** Velocity in meters per second
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Project Structure
+- `src/App.js` - Main application logic and UI
+- `src/index.js` - Entry point
+- `public/dummy_rocket_data_with_velocity.csv` - Sample telemetry data
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Dependencies
+- [React](https://reactjs.org/)
+- [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber/getting-started/introduction)
+- [@react-three/drei](https://docs.pmnd.rs/drei/introduction)
+- [three.js](https://threejs.org/)
+- [chart.js](https://www.chartjs.org/)
+- [react-chartjs-2](https://react-chartjs-2.js.org/)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Customization
+- To use your own data, replace `public/dummy_rocket_data_with_velocity.csv` with your telemetry file in the same format.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## License
+[MIT](LICENSE)
