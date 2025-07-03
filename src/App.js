@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { Line } from "react-chartjs-2";
+import { Line, Scatter } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -118,6 +118,94 @@ function SingleGraph({ label, dataPoints, color, backgroundColor, labels }) {
   };
 
   return <Line data={chartData} options={options} />;
+}
+
+function PathGraph({ data, currentFrame }) {
+  const windowSize = 30;
+  const start = Math.max(0, currentFrame - windowSize + 1);
+  const end = currentFrame + 1;
+  const windowData = data.slice(start, end);
+
+  // Interpolate points between each pair (linear interpolation, 4 points between each pair)
+  const interpolatedData = [];
+  const numInterp = 4; // number of points to interpolate between each pair
+  for (let i = 0; i < windowData.length - 1; i++) {
+    const p1 = windowData[i];
+    const p2 = windowData[i + 1];
+    interpolatedData.push({ x: p1.pitch, y: p1.roll });
+    for (let j = 1; j <= numInterp; j++) {
+      const t = j / (numInterp + 1);
+      interpolatedData.push({
+        x: p1.pitch + (p2.pitch - p1.pitch) * t,
+        y: p1.roll + (p2.roll - p1.roll) * t,
+      });
+    }
+  }
+  if (windowData.length > 0) {
+    interpolatedData.push({ x: windowData[windowData.length - 1].pitch, y: windowData[windowData.length - 1].roll });
+  }
+
+  const scatterData = {
+    datasets: [
+      {
+        label: "Path",
+        data: interpolatedData,
+        backgroundColor: "#00ff00",
+        borderColor: "#00ff00",
+        showLine: true,
+        pointRadius: 2,
+      },
+    ],
+  };
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: {
+          color: "#ffffff",
+        },
+      },
+      title: {
+        display: true,
+        text: "Path (Pitch vs Roll, Interpolated)",
+        color: "#00ff00",
+        font: {
+          size: 18,
+        },
+      },
+    },
+    scales: {
+      x: {
+        min: -50,
+        max: 50,
+        title: {
+          display: true,
+          text: "Pitch",
+          color: "#ffffff",
+          font: { size: 14 },
+        },
+        grid: { color: "rgba(255,255,255,0.1)" },
+        ticks: { color: "#ffffff" },
+      },
+      y: {
+        min: -50,
+        max: 50,
+        title: {
+          display: true,
+          text: "Roll",
+          color: "#ffffff",
+          font: { size: 14 },
+        },
+        grid: { color: "rgba(255,255,255,0.1)" },
+        ticks: { color: "#ffffff" },
+      },
+    },
+  };
+  return (
+    <div style={{ height: "300px", width: "100%", marginTop: "20px" }}>
+      <Scatter data={scatterData} options={options} />
+    </div>
+  );
 }
 
 function GraphDashboard({ data, currentFrame }) {
@@ -347,9 +435,25 @@ function VelocityGraph({ data, currentFrame }) {
 }
 
 export default function App() {
-  const [data, setData] = useState([]);
+  const [orientationData, setOrientationData] = useState([]); // logs.csv
+  const [altVelData, setAltVelData] = useState([]); // dummy_rocket_data_with_velocity.csv
   const [frame, setFrame] = useState(0);
 
+  // Fetch orientation data (logs.csv)
+  useEffect(() => {
+    fetch("/logs.csv")
+      .then((res) => res.text())
+      .then((text) => {
+        const lines = text.trim().split("\n");
+        const parsed = lines.slice(1).map((line) => {
+          const [timestamp, pitch, roll, yaw] = line.split(",").map(Number);
+          return { timestamp, pitch, roll, yaw };
+        });
+        setOrientationData(parsed);
+      });
+  }, []);
+
+  // Fetch altitude/velocity data (dummy_rocket_data_with_velocity.csv)
   useEffect(() => {
     fetch("/dummy_rocket_data_with_velocity.csv")
       .then((res) => res.text())
@@ -359,19 +463,25 @@ export default function App() {
           const [timestamp, pitch, yaw, roll, altitude, velocity] = line.split(",").map(Number);
           return { timestamp, pitch, yaw, roll, altitude, velocity };
         });
-        setData(parsed);
+        setAltVelData(parsed);
       });
   }, []);
 
+  // Synchronize frame index
+  const minLength = Math.min(orientationData.length, altVelData.length);
   useEffect(() => {
-    if (data.length === 0) return;
+    if (minLength === 0) return;
     const interval = setInterval(() => {
-      setFrame((prev) => (prev + 1) % data.length);
+      setFrame((prev) => (prev + 1) % minLength);
     }, 400);
     return () => clearInterval(interval);
-  }, [data]);
+  }, [minLength]);
 
-  if (data.length === 0) return <p style={{ color: '#ffffff' }}>Loading data...</p>;
+  if (orientationData.length === 0 || altVelData.length === 0)
+    return <p style={{ color: '#ffffff' }}>Loading data...</p>;
+
+  // Compose a single object for RocketViewer (uses pitch, yaw, roll)
+  const rocketFrame = orientationData[frame] || orientationData[0];
 
   return (
     <div style={{ 
@@ -419,7 +529,7 @@ export default function App() {
             boxShadow: '0 0 20px rgba(0, 255, 0, 0.3)',
             marginTop: '60px'
           }}>
-            <RocketViewer data={data} frame={frame} />
+            <RocketViewer data={[rocketFrame]} frame={0} />
           </div>
           <div style={{
             backgroundColor: 'rgba(0, 255, 0, 0.1)',
@@ -446,10 +556,10 @@ export default function App() {
               justifyContent: 'space-between'
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <AltitudeGraph data={data} currentFrame={frame} />
+                <AltitudeGraph data={altVelData} currentFrame={frame} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <VelocityGraph data={data} currentFrame={frame} />
+                <VelocityGraph data={altVelData} currentFrame={frame} />
               </div>
             </div>
           </div>
@@ -473,8 +583,34 @@ export default function App() {
           }}>
             Orientation Graphs
           </h3>
-          <GraphDashboard data={data} currentFrame={frame} />
+          <GraphDashboard data={orientationData} currentFrame={frame} />
         </div>
+      </div>
+      {/* Path Graph Section */}
+      <div style={{
+        width: '100%',
+        maxWidth: '1200px',
+        marginTop: '40px',
+        backgroundColor: 'rgba(0, 255, 0, 0.08)',
+        borderRadius: '10px',
+        border: '1px solid rgba(0, 255, 0, 0.2)',
+        boxShadow: '0 0 20px rgba(0, 255, 0, 0.1)',
+        padding: '30px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}>
+        <h3 style={{
+          fontSize: '1.5rem',
+          fontWeight: '600',
+          marginBottom: '30px',
+          textAlign: 'center',
+          color: '#00ff00',
+          textShadow: '0 0 10px rgba(0, 255, 0, 0.5)'
+        }}>
+          Path Graph
+        </h3>
+        <PathGraph data={orientationData} currentFrame={frame} />
       </div>
     </div>
   );
