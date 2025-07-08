@@ -441,7 +441,7 @@ export default function App() {
 
   // Fetch orientation data (logs.csv)
   useEffect(() => {
-    fetch("/logs.csv")
+    fetch("/mpu6050_log.csv")
       .then((res) => res.text())
       .then((text) => {
         const lines = text.trim().split("\n");
