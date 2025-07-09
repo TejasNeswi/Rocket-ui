@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 /rpie/.idea
+/.idea
 # testing
 /coverage
 

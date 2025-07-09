@@ -7,7 +7,7 @@ import os
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 MQTT_TOPIC = "mpu6050/yourname/data"  # must match your topic exactly
-CSV_FILE = "mpu6050_log.csv"
+CSV_FILE = "../public/mpu_log.csv"
 
 # Create CSV file with headers if it doesn't exist
 if not os.path.exists(CSV_FILE):
