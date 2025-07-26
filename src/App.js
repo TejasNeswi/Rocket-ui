@@ -434,6 +434,121 @@ function VelocityGraph({ data, currentFrame }) {
   );
 }
 
+function PathGraph3D({ data, currentFrame }) {
+  // Start from the first timestamp and show progression up to current frame
+  const start = 0; // Always start from the first data point
+  const end = Math.min(currentFrame + 1, data.length); // Show up to current frame
+  const windowData = data.slice(start, end);
+
+  // Use the full dataset for timestamp normalization
+  const maxTimestamp = Math.max(...data.map(d => d.timestamp));
+  const minTimestamp = Math.min(...data.map(d => d.timestamp));
+  const timestampRange = maxTimestamp - minTimestamp;
+
+  const points = windowData.map((d, index) => {
+    const normalizedTimestamp = timestampRange > 0 ? (d.timestamp - minTimestamp) / timestampRange * 100 : 0;
+    return {
+      x: d.pitch, // Use actual pitch values (-50 to +50)
+      y: d.roll,  // Use actual roll values (-50 to +50)
+      z: normalizedTimestamp, // Map timestamp to [0, 100] range
+      originalIndex: index
+    };
+  });
+
+  return (
+    <Canvas style={{ height: "400px", background: "#000000" }} camera={{ position: [80, 80, 80], fov: 60 }}>
+      <ambientLight intensity={0.3} />
+      <pointLight position={[10, 10, 10]} intensity={1} />
+      <OrbitControls 
+        enablePan={true} 
+        enableZoom={true} 
+        enableRotate={true}
+        enableDamping={false}
+        screenSpacePanning={true}
+      />
+      
+      {/* X-axis - Red line (horizontal) */}
+      <line>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={new Float32Array([-50, 0, 0, 50, 0, 0])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color="#ff0000" linewidth={5} />
+      </line>
+      
+      {/* Y-axis - Green line (horizontal, perpendicular to X) */}
+      <line>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={new Float32Array([0, -50, 0, 0, 50, 0])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color="#00ff00" linewidth={5} />
+      </line>
+      
+      {/* Z-axis - Blue line (vertical, perpendicular to X-Y plane) */}
+      <line>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={new Float32Array([0, 0, 0, 0, 0, 100])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color="#0000ff" linewidth={5} />
+      </line>
+
+      {/* Path lines connecting data points */}
+      {points.map((point, index) => {
+        if (index === 0) return null;
+        const prevPoint = points[index - 1];
+        return (
+          <line key={`line-${index}`}>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                count={2}
+                array={new Float32Array([
+                  prevPoint.x, prevPoint.y, prevPoint.z,
+                  point.x, point.y, point.z
+                ])}
+                itemSize={3}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial color="#00ff00" linewidth={2} />
+          </line>
+        );
+      })}
+
+      {/* Data points */}
+      {points.map((point, index) => (
+        <mesh key={`point-${index}`} position={[point.x, point.y, point.z]}>
+          <sphereGeometry args={[0.8, 8, 8]} />
+          <meshStandardMaterial color="#00ff00" emissive="#00ff00" emissiveIntensity={0.5} />
+        </mesh>
+      ))}
+
+      {/* Current point highlight */}
+      {points.length > 0 && (
+        <mesh position={[points[points.length - 1].x, points[points.length - 1].y, points[points.length - 1].z]}>
+          <sphereGeometry args={[1.2, 16, 16]} />
+          <meshStandardMaterial color="#ffff00" emissive="#ffff00" emissiveIntensity={0.8} />
+        </mesh>
+      )}
+    </Canvas>
+  );
+}
+
+
+
 export default function App() {
   const [orientationData, setOrientationData] = useState([]); // logs.csv
   const [altVelData, setAltVelData] = useState([]); // dummy_rocket_data_with_velocity.csv
@@ -611,6 +726,100 @@ export default function App() {
           Path Graph
         </h3>
         <PathGraph data={orientationData} currentFrame={frame} />
+      </div>
+
+      {/* 3D Path Graph Section */}
+      <div style={{
+        width: '100%',
+        maxWidth: '1200px',
+        marginTop: '40px',
+        backgroundColor: 'rgba(0, 255, 0, 0.08)',
+        borderRadius: '10px',
+        border: '1px solid rgba(0, 255, 0, 0.2)',
+        boxShadow: '0 0 20px rgba(0, 255, 0, 0.1)',
+        padding: '30px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}>
+        <h3 style={{
+          fontSize: '1.5rem',
+          fontWeight: '600',
+          marginBottom: '30px',
+          textAlign: 'center',
+          color: '#00ff00',
+          textShadow: '0 0 10px rgba(0, 255, 0, 0.5)'
+        }}>
+          3D Path Graph (Pitch vs Roll vs Time)
+        </h3>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '20px',
+          width: '100%'
+        }}>
+          <div style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            borderRadius: '10px',
+            padding: '20px',
+            border: '1px solid rgba(0, 255, 0, 0.3)',
+            width: '100%',
+            maxWidth: '800px'
+          }}>
+            <PathGraph3D data={orientationData} currentFrame={frame} />
+          </div>
+          <div style={{
+            display: 'flex',
+            gap: '40px',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            marginTop: '20px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              color: '#00ff00'
+            }}>
+              <div style={{
+                width: '20px',
+                height: '20px',
+                backgroundColor: '#ff0000',
+                borderRadius: '50%'
+              }}></div>
+              <span>X-Axis: Pitch (-50 to +50)</span>
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              color: '#00ff00'
+            }}>
+              <div style={{
+                width: '20px',
+                height: '20px',
+                backgroundColor: '#00ff00',
+                borderRadius: '50%'
+              }}></div>
+              <span>Y-Axis: Roll (-50 to +50)</span>
+            </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              color: '#00ff00'
+            }}>
+              <div style={{
+                width: '20px',
+                height: '20px',
+                backgroundColor: '#0000ff',
+                borderRadius: '50%'
+              }}></div>
+              <span>Z-Axis: Time (0 to 100)</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
